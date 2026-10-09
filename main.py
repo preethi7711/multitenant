@@ -19,7 +19,8 @@ app = FastAPI(title="Task Management Cloud Platform", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in settings.ALLOWED_ORIGINS.split(',')],
+    allow_origins=[o.strip().rstrip('/') for o in settings.ALLOWED_ORIGINS.split(',') if o.strip()],
+    allow_origin_regex=settings.ALLOWED_ORIGIN_REGEX or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

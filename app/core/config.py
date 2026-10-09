@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", os.getenv("JWT_SECRET", "super-secret-key"))
     JWT_ALGORITHM: str = "HS256"
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
+    ALLOWED_ORIGIN_REGEX: str | None = os.getenv("ALLOWED_ORIGIN_REGEX")
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     MAX_SIMULATION_ITEMS: int = int(os.getenv("MAX_SIMULATION_ITEMS", "100"))
 

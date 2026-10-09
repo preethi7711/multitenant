@@ -42,6 +42,12 @@ VITE_API_BASE_URL=http://localhost:8000
 VITE_GOOGLE_CLIENT_ID=        # Optional: fill in for Google OAuth
 ```
 
+For Netlify production, configure `VITE_API_BASE_URL` in Netlify's site
+environment variables as the public Render API URL, for example
+`https://taskflow-api.onrender.com`. Do not include `/api/v1`; the application
+appends that path. Redeploy after changing it because Vite embeds environment
+variables during the build.
+
 ### 3. Start the dev server
 ```bash
 npm run dev

@@ -47,6 +47,21 @@ port `8000` for local Docker Compose.
 7. Deploy and copy the generated `https://...netlify.app` URL.
 8. In Render, set `ALLOWED_ORIGINS` to that exact Netlify URL and redeploy the API.
 
+For Netlify deploy previews, set Render's optional `ALLOWED_ORIGIN_REGEX` to a
+restricted pattern for your site, for example:
+
+```text
+^https://([a-z0-9-]+--)?chic-cannoli-f6588f\.netlify\.app$
+```
+
+Keep the production Netlify URL in `ALLOWED_ORIGINS` as well. Never use `.*`
+as a global origin pattern.
+
+Important: `VITE_API_BASE_URL` is compiled into the frontend at build time.
+Changing it in Netlify requires a new deploy. If it is missing, the local
+development fallback (`http://localhost:8000`) is used, which cannot work for
+visitors to the deployed site.
+
 The repository includes [`netlify.toml`](./netlify.toml) and
 [`frontend/public/_redirects`](./frontend/public/_redirects) so React routes
 continue working when a page is refreshed directly.
@@ -87,6 +102,7 @@ The login page includes buttons that fill these credentials automatically.
 ## 9. Troubleshooting Common Errors
 
 - **500 Internal Server Error on Login:** Check Render logs. Likely an issue with `MONGODB_URI` or database network access. Ensure IP `0.0.0.0/0` is whitelisted in Atlas.
-- **CORS Error in Browser Console:** Ensure the frontend URL in Vercel exactly matches the `ALLOWED_ORIGINS` environment variable in Render (no trailing slash).
+- **CORS Error in Browser Console:** Ensure the frontend URL in Netlify exactly matches the `ALLOWED_ORIGINS` environment variable in Render (no trailing slash), then redeploy the Render service.
 - **Netlify CORS Error:** Add both the Netlify production URL and any Netlify deploy-preview URL you use as comma-separated origins in Render, for example `https://app.netlify.app,https://deploy-preview-42--app.netlify.app`.
+- **Requests go to `localhost:8000`:** Set `VITE_API_BASE_URL` in Netlify to the Render URL, trigger a new deploy, and confirm the browser request starts with `https://<your-render-service>.onrender.com/api/v1`.
 - **Frontend failing to build:** Ensure all dependencies in `frontend/package.json` are correct and `VITE_API_BASE_URL` is properly prefixed.
