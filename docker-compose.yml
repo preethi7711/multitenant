@@ -1,0 +1,93 @@
+services:
+  # MongoDB for local development; production uses MongoDB Atlas.
+  mongo:
+    image: mongo:7
+    container_name: task_management_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - task_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: task_management_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - task_network
+    command: redis-server --appendonly yes
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task_management_app
+    environment:
+      APP_ENV: production
+      DEBUG: "False"
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB_NAME: taskflow_cloud
+      JWT_SECRET_KEY: your-super-secret-jwt-key-change-in-production-min-32-chars-long
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      REDIS_URL: redis://redis:6379/0
+      REDIS_ENABLED: "True"
+      LOG_LEVEL: INFO
+      LOG_FORMAT: json
+      RATE_LIMIT_PER_MINUTE: 60
+      RATE_LIMIT_PER_HOUR: 1000
+    ports:
+      - "8000:8000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - task_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8000
+    container_name: task_management_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+    networks:
+      - task_network
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  task_network:
+    driver: bridge
