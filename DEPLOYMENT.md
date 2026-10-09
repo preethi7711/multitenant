@@ -28,14 +28,30 @@ This document explains how to deploy the Multi-Tenant Task Management SaaS Platf
 
 1. In Render, choose **New > Blueprint** and select the GitHub repository.
 2. Confirm the `render.yaml` service, which uses the repository `Dockerfile`.
-3. Set `MONGODB_URI` to the Atlas connection string and `ALLOWED_ORIGINS` to the expected Vercel URL.
+3. Set `MONGODB_URI` to the Atlas connection string and `ALLOWED_ORIGINS` to the deployed frontend origin. For Netlify, use the full site URL, such as `https://your-site.netlify.app` (without a trailing slash).
 4. Deploy and wait for `GET /health` to become healthy.
 5. Copy the assigned API URL, for example `https://taskflow-api.onrender.com`.
 
 The Docker image reads Render's `PORT` environment variable and falls back to
 port `8000` for local Docker Compose.
 
-## 5. Frontend Deployment (Vercel)
+## 5. Frontend Deployment (Netlify)
+
+1. In [Netlify](https://app.netlify.com/), choose **Add new site > Import an existing project**.
+2. Select the GitHub repository.
+3. Set **Base directory** to `frontend`.
+4. Set **Build command** to `npm run build`.
+5. Set **Publish directory** to `frontend/dist` when the base directory is blank, or `dist` when the base directory is `frontend`.
+6. Add the environment variable:
+   - `VITE_API_BASE_URL` = `<Your Render backend URL>` (without `/api/v1`)
+7. Deploy and copy the generated `https://...netlify.app` URL.
+8. In Render, set `ALLOWED_ORIGINS` to that exact Netlify URL and redeploy the API.
+
+The repository includes [`netlify.toml`](./netlify.toml) and
+[`frontend/public/_redirects`](./frontend/public/_redirects) so React routes
+continue working when a page is refreshed directly.
+
+## 6. Frontend Deployment (Vercel)
 
 1. Go to [Vercel](https://vercel.com/) and create a new **Project**.
 2. Connect the GitHub repository and set **Root Directory** to `frontend`.
@@ -43,16 +59,16 @@ port `8000` for local Docker Compose.
 4. Add Environment Variables:
    - `VITE_API_BASE_URL` = `<Your Render backend URL>` (without `/api/v1`)
 5. Click **Deploy**.
-6. Once deployed, note the frontend URL and update the `ALLOWED_ORIGINS` on Render if necessary.
+6. Once deployed, note the frontend URL and update `ALLOWED_ORIGINS` on Render if necessary.
 
-## 6. Testing Production Deployment
+## 7. Testing Production Deployment
 
 1. Visit your frontend Vercel URL.
 2. Register a new user and create an organization.
 3. Log out and try to access restricted routes to test RBAC and authentication.
 4. Navigate to the **Cloud Control Center** to verify MongoDB counts, backend request metrics, service health, and bounded simulations.
 
-## 7. Demo accounts
+## 8. Demo accounts
 
 For a classroom demonstration, seed repeatable MongoDB data with:
 
@@ -68,8 +84,9 @@ All demo accounts use `Password123!`:
 
 The login page includes buttons that fill these credentials automatically.
 
-## 8. Troubleshooting Common Errors
+## 9. Troubleshooting Common Errors
 
 - **500 Internal Server Error on Login:** Check Render logs. Likely an issue with `MONGODB_URI` or database network access. Ensure IP `0.0.0.0/0` is whitelisted in Atlas.
 - **CORS Error in Browser Console:** Ensure the frontend URL in Vercel exactly matches the `ALLOWED_ORIGINS` environment variable in Render (no trailing slash).
+- **Netlify CORS Error:** Add both the Netlify production URL and any Netlify deploy-preview URL you use as comma-separated origins in Render, for example `https://app.netlify.app,https://deploy-preview-42--app.netlify.app`.
 - **Frontend failing to build:** Ensure all dependencies in `frontend/package.json` are correct and `VITE_API_BASE_URL` is properly prefixed.
